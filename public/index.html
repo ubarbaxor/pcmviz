@@ -4,6 +4,62 @@
         <title>PCM data grapher</title>
     </header>
     <body>
-        <p>Nothing to see here !</p>
+        <script src="/redist/getUserMedia-polyfill.js"></script>
+        <script>
+            let currentStream = null
+
+            const updateStreamToggle = stream => {
+                if (!stream)
+                    stream = currentStream
+
+                const streamToggle = document.getElementById('toggleStream')
+
+                if (stream && stream.getAudioTracks().length) {
+                    document.getElementById('toggleStream').innerText = "Stop recording"
+                    document.getElementById('toggleStream').onclick = _ => stopMicStream(stream)
+                } else {
+                    document.getElementById('toggleStream').innerText = "Start recording"
+                    document.getElementById('toggleStream').onclick = _ => startMicStream(streaming)
+                }
+            }
+
+            const startMicStream = cb => {
+                if (!cb)
+                    cb = streaming
+                navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false
+                }).then(cb)
+            }
+
+            const stopMicStream = stream => {
+                if (!stream)
+                    stream = currentStream
+
+                stream.getAudioTracks().forEach(track => {
+                    track.stop()
+                    stream.removeTrack(track)
+                });
+
+                if (stream == currentStream && !stream.getAudioTracks().length)
+                    currentStream = null
+
+                updateStreamToggle()
+            }
+
+            const streaming = stream => {
+                if (currentStream == null)
+                    currentStream = stream
+
+                updateStreamToggle()
+
+                stream.addEventListener('removetrack', e => {
+                    console.log(`Track removed`)
+                    console.log(e)
+                    updateStreamToggle()
+                })
+            }
+        </script>
+        <button id="toggleStream" onclick="startMicStream(streaming)">Start recording</button>
     </body>
 </html>

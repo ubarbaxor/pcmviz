@@ -8,8 +8,9 @@ const middleware = (req, res, next) => {
     const MM = ('' + date.getMinutes()).slice(-2)
     const SS = ('' + date.getSeconds()).slice(-2)
 
-    console.log(`${dd}/${mm}/${yy} ${HH}:${MM}:${SS} ${req.ip} ${req.method} ${req.path}`)
+    const format = `${dd}/${mm}/${yy} ${HH}:${MM}:${SS} ${req.ip} ${req.method} ${req.path}`
 
+    console.log(format)
     next()
 }
 
