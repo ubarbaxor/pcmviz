@@ -7,12 +7,11 @@
         <script src="/redist/getUserMedia-polyfill.js"></script>
 
         <script src="/redist/renderjson.js"></script>
-        <script>renderjson.set_show_to_level(2)</script>
+        <script>renderjson.set_show_to_level(1)</script>
 
         <button id="toggleStream" onclick="startMicStream(streaming)">Start recording</button>
-        <div id="playback">Sample duration: N/A</div>
-        <div id="rate">Sample rate: N/A</div>
-        <div id="json-container"><dummy /></div>
+        <div id="sample"><dummy /></div>
+        <div id="buffer"><dummy /></div>
         <script src="/pcm.js"></script>
     </body>
 </html>

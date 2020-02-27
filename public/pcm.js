@@ -1,17 +1,17 @@
 let currentStream = null
 let currentAudioContext = null
 
-let firstFrame = null
-let sample = {
+let sampleInfo = {
     duration: 'N/A',
     rate: 'N/A',
     buffers: [],
-    min: 'N/A',
-    max: 'N/A',
-    avg: 'N/A'
+    min: 0,
+    max: 0,
+    avg: 0
 }
 
-jsonContainer = document.getElementById('json-container')
+sampleElem = document.getElementById('sample')
+bufferElem = document.getElementById('buffer')
 
 const updateStreamToggle = stream => {
     if (!stream)
@@ -20,11 +20,11 @@ const updateStreamToggle = stream => {
     const streamToggle = document.getElementById('toggleStream')
 
     if (stream && stream.getAudioTracks().length) {
-        document.getElementById('toggleStream').innerText = "Stop recording"
-        document.getElementById('toggleStream').onclick = _ => stopMicStream(stream)
+        streamToggle.innerText = "Stop recording"
+        streamToggle.onclick = _ => stopMicStream(stream)
     } else {
-        document.getElementById('toggleStream').innerText = "Start recording"
-        document.getElementById('toggleStream').onclick = _ => startMicStream(streaming)
+        streamToggle.innerText = "Start recording"
+        streamToggle.onclick = _ => startMicStream(streaming)
     }
 }
 
@@ -80,16 +80,9 @@ const processAudio = stream => {
     processor.connect(audioContext.destination)
 
     processor.onaudioprocess = ({ playbackTime, inputBuffer }) => {
-        if (!firstFrame) {
-            firstFrame = inputBuffer
-            console.log(firstFrame)
-        }
-
-        document.getElementById('playback').innerText = `Sample duration: ${playbackTime}`
-        document.getElementById('rate').innerText = `Sampling rate: ${inputBuffer.sampleRate}`
-        sample.duration = playbackTime
-        sample.rate = inputBuffer.sampleRate
-        sample.buffers = [...sample.buffers, inputBuffer]
+        sampleInfo.duration = playbackTime
+        sampleInfo.rate = inputBuffer.sampleRate
+        sampleInfo.buffers = [...sampleInfo.buffers, inputBuffer]
 
         process(inputBuffer)
     }
@@ -97,7 +90,8 @@ const processAudio = stream => {
 
 const process = inputBuffer => {
     // Insert processing
-    lastData = inputBuffer.getChannelData(0).reduce((acc, val, i, arr) => ({
+    bufferInfo = inputBuffer.getChannelData(0).reduce((acc, val, i, arr) => ({
+        ...acc,
         avg: acc.avg + val / arr.length,
         min: val < acc.min
             ? val
@@ -108,12 +102,24 @@ const process = inputBuffer => {
         inversions: i && val * arr[i-1] < 0
             ? acc.inversions + 1
             : acc.inversions
-    }), { avg: 0, min: 0, max: 0, frequency: 0, amplitude: 0, inversions: 0})
+    }), { avg: 0, min: 0, max: 0, frequency: 0, amplitude: 0, inversions: 0, data: inputBuffer})
 
     // Memo: A = 440Hz, oscillation per time
-    lastData.frequency = lastData.inversions / inputBuffer.duration
-    lastData.amplitude = lastData.max - lastData.min
+    bufferInfo.frequency = bufferInfo.inversions / inputBuffer.duration
+    bufferInfo.amplitude = bufferInfo.max - bufferInfo.min
 
-    jsonContainer.replaceChild(renderjson(lastData), jsonContainer.firstChild)
-    console.log(lastData)
+    sampleElem.replaceChild(renderjson(sampleInfo), sampleElem.firstChild)
+    
+    sampleInfo = {
+        ...sampleInfo,
+        min: bufferInfo.min < sampleInfo.min
+            ? bufferInfo.min : sampleInfo.min,
+        max: bufferInfo.max > sampleInfo.max
+            ? bufferInfo.max : sampleInfo.max,
+        buffers: [...sampleInfo.buffers, inputBuffer]
+        // Avg(n) = sig(dn) / n
+        // avg: ???PROFIT???
+    }
+    
+    bufferElem.replaceChild(renderjson(bufferInfo), bufferElem.firstChild)
 }
