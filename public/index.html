@@ -54,6 +54,7 @@
                 
                 currentAudioContext && currentAudioContext.close()
                     .then(_ => { currentAudioContext = null })
+                    .then(updateStreamToggle)
             }
 
             const streaming = stream => {
