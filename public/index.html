@@ -5,124 +5,14 @@
     </header>
     <body>
         <script src="/redist/getUserMedia-polyfill.js"></script>
+
         <script src="/redist/renderjson.js"></script>
-        <script>
-            let currentStream = null
-            let currentAudioContext = null
+        <script>renderjson.set_show_to_level(2)</script>
 
-            let firstFrame = null
-            let lastData = {
-                playback: "N/A",
-                playbackTime: "N/A"
-            }
-
-            const updateStreamToggle = stream => {
-                if (!stream)
-                    stream = currentStream
-
-                const streamToggle = document.getElementById('toggleStream')
-
-                if (stream && stream.getAudioTracks().length) {
-                    document.getElementById('toggleStream').innerText = "Stop recording"
-                    document.getElementById('toggleStream').onclick = _ => stopMicStream(stream)
-                } else {
-                    document.getElementById('toggleStream').innerText = "Start recording"
-                    document.getElementById('toggleStream').onclick = _ => startMicStream(streaming)
-                }
-            }
-
-            const startMicStream = cb => {
-                if (!cb)
-                    cb = streaming
-                navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: false
-                }).then(cb)
-            }
-
-            const stopMicStream = stream => {
-                if (!stream)
-                    stream = currentStream
-
-                stream.getAudioTracks().forEach(track => {
-                    track.stop()
-                    stream.removeTrack(track)
-                });
-
-                if (stream == currentStream && !stream.getAudioTracks().length)
-                    currentStream = null
-                
-                currentAudioContext && currentAudioContext.close()
-                    .then(_ => { currentAudioContext = null })
-                    .then(updateStreamToggle)
-            }
-
-            const streaming = stream => {
-                if (currentStream == null)
-                    currentStream = stream
-
-                updateStreamToggle()
-
-                stream.addEventListener('removetrack', e => {
-                    console.log(`Track removed`)
-                    console.log(e)
-                    updateStreamToggle()
-                })
-
-                processAudio(stream)
-            }
-
-            const processAudio = stream => {
-                const audioContext = new AudioContext()
-                currentAudioContext = audioContext
-
-                const source = audioContext.createMediaStreamSource(stream)
-                const processor = audioContext.createScriptProcessor(1024, 1, 1)
-
-                source.connect(processor)
-                processor.connect(audioContext.destination)
-
-                processor.onaudioprocess = ({ playbackTime, inputBuffer }) => {
-                    if (!firstFrame) {
-                        firstFrame = inputBuffer
-                        console.log(firstFrame)
-                    }
-
-                    document.getElementById('playback').innerText = `Sample duration: ${playbackTime}`
-                    document.getElementById('rate').innerText = `Sampling rate: ${inputBuffer.sampleRate}`
-                    lastData.playback = playbackTime
-                    lastData.rate = inputBuffer.sampleRate
-
-                    process(inputBuffer)
-                }
-            }
-
-            const process = inputBuffer => {
-                // Insert processing
-                lastData = inputBuffer.getChannelData(0).reduce((acc, val, i, arr) => ({
-                    avg: acc.avg + val / arr.length,
-                    min: val < acc.min
-                        ? val
-                        : acc.min,
-                    max: val > acc.max
-                        ? val
-                        : acc.max,
-                    inversions: i && val * arr[i-1] < 0
-                        ? acc.inversions + 1
-                        : acc.inversions
-                }), { avg: 0, min: 0, max: 0, frequency: 0, amplitude: 0, inversions: 0})
-
-                // Memo: A = 440Hz, oscillation per time
-                lastData.frequency = lastData.inversions / inputBuffer.duration
-                lastData.amplitude = lastData.max - lastData.min
-
-                document.getElementById('data'.innerHTML = renderjson(lastData))
-                console.log(lastData)
-            }
-        </script>
         <button id="toggleStream" onclick="startMicStream(streaming)">Start recording</button>
         <div id="playback">Sample duration: N/A</div>
         <div id="rate">Sample rate: N/A</div>
-        <div id="data"></div>
+        <div id="json-container"><dummy /></div>
+        <script src="/pcm.js"></script>
     </body>
 </html>
