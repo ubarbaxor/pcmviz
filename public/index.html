@@ -2,16 +2,25 @@
 <html>
     <header>
         <title>PCM data grapher</title>
-    </header>
-    <body>
+        <link rel="stylesheet" href="style.css">
+
+        <!-- Scripts from the outside, config etc. -->
         <script src="/redist/getUserMedia-polyfill.js"></script>
 
         <script src="/redist/renderjson.js"></script>
         <script>renderjson.set_show_to_level(1)</script>
+        <!-- End scripts block -->
+    </header>
 
+    <body>
         <button id="toggleStream" onclick="startMicStream(streaming)">Start recording</button>
         <div id="sample"><dummy /></div>
         <div id="buffer"><dummy /></div>
-        <script src="/pcm.js"></script>
+        <div id="canvasContainer">
+            <canvas id="render"></canvas>
+        </div>
     </body>
+    <!-- Local scripts -->
+    <script src="/pcm.js"></script>
+    <script src="/render.js"></script>
 </html>
