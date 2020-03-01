@@ -12,13 +12,61 @@ const draw = _ => {
     resizeCanvas()
     ctx = context
 
-    ctx.moveTo(0,0)
-    ctx.lineTo(ctx.canvas.width, 0)
-    ctx.lineTo(ctx.canvas.width, ctx.canvas.height)
-    ctx.lineTo(0, ctx.canvas.height)
-    ctx.lineTo(0,0)
+    const xMax = ctx.canvas.width
+    const yMax = ctx.canvas.height
+    const yNul = yMax / 2
+
+    project = v => {
+        const Vmax = 2
+        const Y0 = yMax / 2
+
+        const Yv = Y0 - (v / Vmax) * Y0
+
+        return Yv
+    }
+
+    // Data representation
+    // Draw a box / border
+    ctx.beginPath()
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0,0,ctx.canvas.width, ctx.canvas.height)
+
+    // Zero Y line
+    ctx.beginPath()
+    ctx.setLineDash([1, 4])
+    ctx.moveTo(0, project(0))
+    ctx.lineTo(xMax, project(0))
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // sample stuff
+    // Max value
+    const sampleMax = project(sampleInfo.max)
+    ctx.beginPath()
+    ctx.moveTo(0, sampleMax)
+    ctx.lineTo(xMax, sampleMax)
+    ctx.strokeStyle = 'red'
+    ctx.stroke()
+    // min value
+    const sampleMin = project(sampleInfo.min)
+    ctx.beginPath()
+    ctx.moveTo(0, sampleMin)
+    ctx.lineTo(xMax, sampleMin)
+    ctx.strokeStyle = 'blue'
     ctx.stroke()
 
+    if (sampleInfo.buffers.length){
+        bufferData = bufferInfo.data.getChannelData(0)
+        bufferData.map((v, i) => {
+            const y = project(v)
+            const x = i * xMax / bufferData.length
+
+            ctx.beginPath()
+            ctx.moveTo(x, yNul)
+            ctx.lineTo(x, y)
+            ctx.stroke()
+        })
+    }
     window.requestAnimationFrame(draw)
 }
 

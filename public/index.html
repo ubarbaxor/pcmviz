@@ -13,7 +13,10 @@
     </header>
 
     <body>
-        <button id="toggleStream" onclick="startMicStream(streaming)">Start recording</button>
+        <div id="controls">
+            <button id="toggleStream" onclick="startMicStream(streaming)">Start recording</button>
+            <button id="reset" onclick="reset()">Reset</button>
+        </div>
         <div id="sample"><dummy /></div>
         <div id="buffer"><dummy /></div>
         <div id="canvasContainer">

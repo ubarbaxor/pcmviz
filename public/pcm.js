@@ -3,11 +3,40 @@ let currentAudioContext = null
 
 let sampleInfo = {
     duration: 'N/A',
+    min: 'N/A',
+    max: 'N/A',
+    avg: 'N/A',
     rate: 'N/A',
     buffers: [],
-    min: 0,
-    max: 0,
-    avg: 0
+}
+
+const reset = _ => {
+    console.log('reset')
+    sampleInfo = {
+        duration: 'N/A',
+        rate: 'N/A',
+        buffers: [],
+        min: 'N/A',
+        max: 'N/A',
+        avg: 'N/A'
+    }
+
+    bufferInfo = {
+        min: 'N/A',
+        max: 'N/A',
+        avg: 'N/A',
+        frequency: 'N/A',
+        amplitude: 'N/A',
+        inversions: 'N/A',
+        data: []
+    }
+
+    if (currentStream) {
+        stopMicStream(currentStream)
+        startMicStream(streaming)
+    }
+    bufferElem.replaceChild(renderjson(bufferInfo), bufferElem.firstChild)
+    sampleElem.replaceChild(renderjson(sampleInfo), sampleElem.firstChild)
 }
 
 sampleElem = document.getElementById('sample')
@@ -80,9 +109,8 @@ const processAudio = stream => {
     processor.connect(audioContext.destination)
 
     processor.onaudioprocess = ({ playbackTime, inputBuffer }) => {
-        sampleInfo.duration = playbackTime
+        sampleInfo.duration = playbackTime.toFixed(2)
         sampleInfo.rate = inputBuffer.sampleRate
-        sampleInfo.buffers = [...sampleInfo.buffers, inputBuffer]
 
         process(inputBuffer)
     }
@@ -92,34 +120,36 @@ const process = inputBuffer => {
     // Insert processing
     bufferInfo = inputBuffer.getChannelData(0).reduce((acc, val, i, arr) => ({
         ...acc,
-        avg: acc.avg + val / arr.length,
         min: val < acc.min
             ? val
             : acc.min,
         max: val > acc.max
             ? val
             : acc.max,
+        avg: acc.avg + val / arr.length,
         inversions: i && val * arr[i-1] < 0
             ? acc.inversions + 1
             : acc.inversions
-    }), { avg: 0, min: 0, max: 0, frequency: 0, amplitude: 0, inversions: 0, data: inputBuffer})
+    }), { min: 0, max: 0, avg: 0, frequency: 0, amplitude: 0, inversions: 0, data: inputBuffer })
 
     // Memo: A = 440Hz, oscillation per time
     bufferInfo.frequency = bufferInfo.inversions / inputBuffer.duration
     bufferInfo.amplitude = bufferInfo.max - bufferInfo.min
-
-    sampleElem.replaceChild(renderjson(sampleInfo), sampleElem.firstChild)
     
     sampleInfo = {
         ...sampleInfo,
-        min: bufferInfo.min < sampleInfo.min
-            ? bufferInfo.min : sampleInfo.min,
-        max: bufferInfo.max > sampleInfo.max
-            ? bufferInfo.max : sampleInfo.max,
+        min: sampleInfo.min < bufferInfo.min
+            ? sampleInfo.min : bufferInfo.min,
+        max: sampleInfo.max > bufferInfo.max
+            ?  sampleInfo.max : bufferInfo.max,
+        avg: sampleInfo.buffers.length
+            ? sampleInfo.avg
+                * sampleInfo.buffers.length / (sampleInfo.buffers.length + 1)
+                + bufferInfo.avg / (sampleInfo.buffers.length + 1)
+            : bufferInfo.avg,
         buffers: [...sampleInfo.buffers, inputBuffer]
-        // Avg(n) = sig(dn) / n
-        // avg: ???PROFIT???
     }
     
     bufferElem.replaceChild(renderjson(bufferInfo), bufferElem.firstChild)
+    sampleElem.replaceChild(renderjson(sampleInfo), sampleElem.firstChild)
 }
